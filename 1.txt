@@ -1,0 +1,117 @@
+Step 1: Install Python
+Download Python:
+
+Go to the official Python website and download the latest version of Python.
+Install Python:
+
+Run the installer and follow the on-screen instructions. Make sure to check the option to add Python to your PATH.
+
+Step 2: Set Up a Virtual Environment
+	Open Command Prompt or Terminal.
+
+	Create a Virtual Environment:
+
+	python -m venv mnist-env
+
+	Activate the Virtual Environment:
+
+	On Windows:
+
+		mnist-env\Scripts\activate
+
+Step 3: Install Necessary Libraries
+
+Upgrade pip:
+	pip install --upgrade pip
+
+Install TensorFlow:
+	pip install tensorflow
+
+Install Matplotlib:
+	pip install matplotlib
+
+Step 4: Run the MNIST Program
+Create a new Python file (e.g., mnist_recognition.py) and paste the following code into it:
+
+import tensorflow as tf
+from tensorflow.keras import layers, models
+import matplotlib.pyplot as plt
+
+# Load and preprocess the MNIST dataset
+mnist = tf.keras.datasets.mnist
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+x_train, x_test = x_train / 255.0, x_test / 255.0  # Normalize the data to [0, 1] range
+
+# Build the neural network model
+model = models.Sequential([
+    layers.Flatten(input_shape=(28, 28)),
+    layers.Dense(128, activation='relu'),
+    layers.Dropout(0.2),
+    layers.Dense(10, activation='softmax')
+])
+
+# Compile the model
+model.compile(optimizer='adam',
+              loss='sparse_categorical_crossentropy',
+              metrics=['accuracy'])
+
+# Train the model
+history = model.fit(x_train, y_train, epochs=5, validation_data=(x_test, y_test))
+
+# Evaluate the model
+test_loss, test_acc = model.evaluate(x_test, y_test, verbose=2)
+print(f'\nTest accuracy: {test_acc}')
+
+# Plot training & validation accuracy values
+plt.figure(figsize=(12, 4))
+plt.subplot(1, 2, 1)
+plt.plot(history.history['accuracy'])
+plt.plot(history.history['val_accuracy'])
+plt.title('Model accuracy')
+plt.ylabel('Accuracy')
+plt.xlabel('Epoch')
+plt.legend(['Train', 'Test'], loc='upper left')
+
+# Plot training & validation loss values
+plt.subplot(1, 2, 2)
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+plt.title('Model loss')
+plt.ylabel('Loss')
+plt.xlabel('Epoch')
+plt.legend(['Train', 'Test'], loc='upper left')
+
+plt.show()
+
+Run the Program:
+	python mnist_recognition.py
+
+
+Explanation:
+	Importing Libraries: We import necessary libraries including TensorFlow, Keras, and Matplotlib.
+
+Loading Data: We load the MNIST dataset which is already included in Keras datasets. The data is split into training and testing sets.	
+
+Normalizing Data: We normalize the image data to a [0, 1] range for better performance.
+
+Building the Model: 
+
+	We build a simple neural network model:
+	
+	Flatten layer to convert each 28x28 image into a 1D array of 784 pixels.
+
+	Dense layer with 128 neurons and ReLU activation.
+
+	Dropout layer to prevent overfitting.
+
+	Dense layer with 10 neurons (one for each digit) and softmax activation for 		probability distribution.
+
+Compiling the Model: We compile the model using the Adam optimizer and sparse categorical crossentropy loss.
+
+Training the Model: We train the model for 5 epochs.
+
+Evaluating the Model: We evaluate the model on the test set and print the test accuracy.
+
+Plotting: We plot the training and validation accuracy and loss to visualize the model's performance over epochs.
+
+You can adjust the number of epochs or the model architecture as needed to improve performance.

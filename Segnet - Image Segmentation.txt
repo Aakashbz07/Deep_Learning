@@ -1,0 +1,175 @@
+To download the CamVid dataset from Kaggle in Google Colab, follow these steps:
+##################################################################
+Step 1: Set up Kaggle API on Colab
+First, we need to get our Kaggle API credentials from the Kaggle website. Here's how to do that:
+
+Go to your Kaggle account by clicking on your profile picture in the top-right corner.
+Select "My Account".
+Scroll down to the "API" section and click on "Create New API Token". This will download a kaggle.json file.
+Now, upload that kaggle.json file to your Colab environment.
+
+###################################################################
+
+Step 2: Upload Kaggle API token to Colab
+Run the following commands to set up the Kaggle API key and download the dataset:
+
+# Install Kaggle package if not already installed
+!pip install kaggle
+
+# Create a directory for the Kaggle API key and move the uploaded kaggle.json file there
+!mkdir -p ~/.kaggle
+!cp kaggle.json ~/.kaggle/
+
+# Set the required permissions for the API key
+!chmod 600 ~/.kaggle/kaggle.json
+
+###################################################################
+
+Step 3: Download the CamVid dataset
+Now that our Kaggle API is set up, run the following command to download the CamVid dataset from Kaggle:
+
+# Download the CamVid dataset from Kaggle
+!kaggle datasets download -d carlolepelaars/camvid
+
+# Unzip the downloaded dataset
+!unzip camvid.zip -d camvid_data
+
+####################################################################################
+
+
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D, BatchNormalization, Softmax
+from tensorflow.keras.utils import to_categorical
+from sklearn.model_selection import train_test_split
+import cv2
+import os
+from matplotlib import pyplot as plt
+
+# Resize and preprocess images and labels
+def load_data(img_dir, label_dir, img_size=(224, 224)):
+    images = []
+    masks = []
+    
+    for img_name in os.listdir(img_dir):
+        img_path = os.path.join(img_dir, img_name)
+        label_path = os.path.join(label_dir, img_name.replace(".png", "_L.png"))
+        
+        img = cv2.imread(img_path)
+        img = cv2.resize(img, img_size)
+        images.append(img)
+        
+        label = cv2.imread(label_path, cv2.IMREAD_GRAYSCALE)  # Assuming labels are grayscale
+        label = cv2.resize(label, img_size, interpolation=cv2.INTER_NEAREST)
+        
+        # Check for invalid label values and correct them
+        label[label >= n_classes] = 0 # Set invalid values to 0 (or handle differently)
+
+        masks.append(label)
+    
+    images = np.array(images)
+    masks = np.array(masks)
+    
+    return images, masks
+
+# Example paths (adjust according to your dataset organization)
+img_dir = '/content/camvid_data/CamVid/train'
+label_dir = '/content/camvid_data/CamVid/train_labels'
+
+# Load and preprocess dataset
+X, y = load_data(img_dir, label_dir)
+
+# Normalize images
+X = X / 255.0
+
+# One-hot encode labels
+n_classes = len(np.unique(y))  # Number of classes
+y = to_categorical(y, num_classes=n_classes)
+
+# Train-test split
+X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
+
+##########################################################################################
+
+def build_segnet(input_shape, n_classes):
+    inputs = Input(shape=input_shape)
+    
+    # Encoder
+    conv1 = Conv2D(64, (3, 3), padding='same', activation='relu')(inputs)
+    bn1 = BatchNormalization()(conv1)
+    pool1 = MaxPooling2D((2, 2))(bn1)
+    
+    conv2 = Conv2D(128, (3, 3), padding='same', activation='relu')(pool1)
+    bn2 = BatchNormalization()(conv2)
+    pool2 = MaxPooling2D((2, 2))(bn2)
+    
+    # Decoder
+    up1 = UpSampling2D((2, 2))(pool2)
+    deconv1 = Conv2D(128, (3, 3), padding='same', activation='relu')(up1)
+    bn3 = BatchNormalization()(deconv1)
+    
+    up2 = UpSampling2D((2, 2))(bn3)
+    deconv2 = Conv2D(64, (3, 3), padding='same', activation='relu')(up2)
+    bn4 = BatchNormalization()(deconv2)
+    
+    # Output layer
+    outputs = Conv2D(n_classes, (1, 1), padding='same', activation='softmax')(bn4)
+    
+    model = Model(inputs, outputs)
+    return model
+
+# Build the model
+input_shape = (224, 224, 3)  # Example input shape (224x224 image with 3 color channels)
+model = build_segnet(input_shape, n_classes)
+
+# Compile the model
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+model.summary()
+
+##########################################################################################
+
+# Train the model
+history = model.fit(X_train, y_train, 
+                    validation_data=(X_val, y_val), 
+                    epochs=5, 
+                    batch_size=16)
+
+# Save the model after training
+model.save('segnet_camvid.h5')
+
+
+##########################################################################################
+
+# Evaluate the model on validation set
+val_loss, val_accuracy = model.evaluate(X_val, y_val)
+print(f'Validation Loss: {val_loss}')
+print(f'Validation Accuracy: {val_accuracy}')
+
+# Visualize some results
+def visualize_predictions(model, X, y, num=5):
+    for i in range(num):
+        img = X[i]
+        label = np.argmax(y[i], axis=-1)
+        
+        pred = model.predict(np.expand_dims(img, axis=0))
+        pred = np.argmax(pred[0], axis=-1)
+        
+        plt.figure(figsize=(10, 5))
+        plt.subplot(1, 3, 1)
+        plt.title("Image")
+        plt.imshow(img)
+        
+        plt.subplot(1, 3, 2)
+        plt.title("True Label")
+        plt.imshow(label)
+        
+        plt.subplot(1, 3, 3)
+        plt.title("Predicted Label")
+        plt.imshow(pred)
+        plt.show()
+
+# Visualize a few predictions
+visualize_predictions(model, X_val, y_val)
+

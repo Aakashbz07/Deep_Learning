@@ -1,0 +1,64 @@
+import numpy as np
+from tensorflow.keras.datasets import cifar10
+from sklearn.decomposition import PCA
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+
+
+# Load CIFAR-10 data
+(x_train, y_train), (x_test, y_test) = cifar10.load_data()
+
+# Reshape the labels
+y_train = y_train.flatten()
+y_test = y_test.flatten()
+
+print(f'Training data shape: {x_train.shape}')
+print(f'Test data shape: {x_test.shape}')
+
+ # Normalize the images
+x_train = x_train.astype('float32') / 255.0
+x_test = x_test.astype('float32') / 255.0
+
+# Reshape the images to 2D arrays
+x_train_flat = x_train.reshape(x_train.shape[0], -1)
+x_test_flat = x_test.reshape(x_test.shape[0], -1)
+
+print(f'Reshaped training data shape: {x_train_flat.shape}')
+print(f'Reshaped test data shape: {x_test_flat.shape}')
+
+
+# Reduce dimensionality with PCA
+n_components = 50
+pca = PCA(n_components=n_components)
+x_train_pca = pca.fit_transform(x_train_flat)
+x_test_pca = pca.transform(x_test_flat)
+
+print(f'Transformed training data shape: {x_train_pca.shape}')
+print(f'Transformed test data shape: {x_test_pca.shape}')
+
+
+
+# Initialize the KNN classifier
+knn = KNeighborsClassifier(n_neighbors=5)
+
+# Train the classifier
+knn.fit(x_train_pca, y_train)
+
+# Evaluate the classifier
+accuracy = knn.score(x_test_pca, y_test)
+print(f'KNN classifier accuracy: {accuracy:.2f}')
+
+
+# Initialize the SVM classifier
+svm = SVC(kernel='linear', C=1)
+
+# Train the classifier
+svm.fit(x_train_pca, y_train)
+
+# Evaluate the classifier
+accuracy_svm = svm.score(x_test_pca, y_test)
+print(f'SVM classifier accuracy: {accuracy_svm:.2f}')
+
+
+
+

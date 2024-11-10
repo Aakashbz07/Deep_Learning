@@ -1,0 +1,83 @@
+import tensorflow as tf
+from tensorflow.keras.datasets import mnist
+from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.layers import BatchNormalization, Dense, Dropout, Flatten
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dropout
+
+model = Sequential([
+    Dense(64, activation='relu', input_shape=(784,)),
+    BatchNormalization(),
+    Dense(64, activation='relu'),
+    BatchNormalization(),
+    Dense(10, activation='softmax')
+])
+
+
+
+model = Sequential([
+    Dense(64, activation='relu', input_shape=(784,)),
+    Dropout(0.5),
+    Dense(64, activation='relu'),
+    Dropout(0.5),
+    Dense(10, activation='softmax')
+])
+
+model = Sequential([
+    Dense(64, activation='relu', input_shape=(784,)),
+    BatchNormalization(),
+    Dropout(0.5),
+    Dense(64, activation='relu'),
+    BatchNormalization(),
+    Dropout(0.5),
+    Dense(10, activation='softmax')
+])
+
+
+
+# Load and preprocess data
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+x_train = x_train.reshape(-1, 784).astype('float32') / 255
+x_test = x_test.reshape(-1, 784).astype('float32') / 255
+y_train = to_categorical(y_train, 10)
+y_test = to_categorical(y_test, 10)
+
+def create_model(use_bn=False, use_dropout=False):
+    model = Sequential()
+    model.add(Dense(64, activation='relu', input_shape=(784,)))
+    if use_bn:
+        model.add(BatchNormalization())
+    if use_dropout:
+        model.add(Dropout(0.5))
+    model.add(Dense(64, activation='relu'))
+    if use_bn:
+        model.add(BatchNormalization())
+    if use_dropout:
+        model.add(Dropout(0.5))
+    model.add(Dense(10, activation='softmax'))
+    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    return model
+
+# Baseline
+baseline_model = create_model()
+baseline_model.fit(x_train, y_train, epochs=10, batch_size=32, validation_split=0.2)
+
+# Batch Normalization
+bn_model = create_model(use_bn=True)
+bn_model.fit(x_train, y_train, epochs=10, batch_size=32, validation_split=0.2)
+
+# Dropout
+dropout_model = create_model(use_dropout=True)
+dropout_model.fit(x_train, y_train, epochs=10, batch_size=32, validation_split=0.2)
+
+# Combined
+combined_model = create_model(use_bn=True, use_dropout=True)
+combined_model.fit(x_train, y_train, epochs=10, batch_size=32, validation_split=0.2)
+
+# Evaluate on test set
+print("Baseline:", baseline_model.evaluate(x_test, y_test))
+print("Batch Normalization:", bn_model.evaluate(x_test, y_test))
+print("Dropout:", dropout_model.evaluate(x_test, y_test))
+print("Combined:", combined_model.evaluate(x_test, y_test))
+
+

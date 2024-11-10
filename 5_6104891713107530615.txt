@@ -1,0 +1,4 @@
+Mask RCNN :- https://abhijeetpujara.medium.com/object-segmentation-with-mask-r-cnn-6e9c06cef81c
+
+U Net :- https://www.kaggle.com/code/bryanb/image-segmentation-u-net/notebook 
+https://medium.com/@alexquesada22/u-net-a-versatile-deep-learning-architecture-for-image-segmentation-2a85b52d71f6
